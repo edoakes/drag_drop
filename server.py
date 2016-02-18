@@ -8,6 +8,8 @@ import tornado.ioloop
 import tornado.web
 import tornado.websocket
 
+import sqlite3
+
 # REQUIRES TORNADO MODULE
 from tornado.options import define, options
 
@@ -35,9 +37,18 @@ class WebSocketBroadcaster(tornado.websocket.WebSocketHandler):
     # Handles a message from the web application
     def on_message(self, message):
         # Converts incoming message to a python dictionary from JSON
-        request_info = json.loads(message)
-        print 'Received request for: ' + str(request_info)
-        
+        request = json.loads(message)
+        print 'Received request for: ' + str(request)
+
+        conn = sqlite3.connect('/home/eoakes/Documents/drag_drop.db')
+        c = conn.cursor()
+
+        #datapoint = (request['video'], request['response'], request['time'])
+
+        c.execute("INSERT INTO DATA VALUES(?, ?, ?)", (request['video'], request['response'], int(request['time'])))
+        conn.commit()
+        conn.close()
+
 
     def on_close(self):
         log.info("Closed socket %r" % self)
