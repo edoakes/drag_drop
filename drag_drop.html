@@ -1,0 +1,143 @@
+<link rel="stylesheet" href="http://code.jquery.com/ui/1.9.2/themes/base/jquery-ui.css" />
+<script type="text/javascript" src="http://code.jquery.com/jquery.min.js"></script>
+<script type="text/javascript" src="http://code.jquery.com/ui/1.9.2/jquery-ui.js"></script>
+ 
+<!-- CSS -->
+<style type="text/css">
+.container{
+    width: 800px;
+    height: 100px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    display: block;
+    text-align: center;
+}
+
+.items {
+    height: 90px;
+    background-color: lightgray;
+    border-radius: 10px;
+    border-style: dashed;
+    border-color: gray;
+    padding: 5px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.label{
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 2px;
+    margin-bottom: 2px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 20px;
+    font-family: arial;
+}
+ 
+li {
+    margin: 2px;
+    padding: 2px;
+    cursor: pointer;
+    border-radius: 3px;
+    background-color: white;
+    border: 1px solid gray;
+    display: inline;
+    font-size: 25px;
+    font-family: arial;
+}
+
+iframe {
+    width: 560;
+    height: 315;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 10px;
+    display: block;
+}
+
+#button {
+    text-align: center;
+    margin-top: 15px;
+}
+</style>
+ 
+ 
+<!-- Javascript -->
+<script>
+    var d = new Date();
+    var time = 3600*d.getHours() + 60*d.getMinutes() + d.getSeconds();
+    var removeIntent = false;
+
+    $(function () {
+        $("#response .items").sortable({
+                connectWith: "ul",
+                over: function() {
+                    removeIntent = false;
+                },
+                out: function() {
+                    removeIntent = true;
+                },
+                beforeStop: function (event, ui) {
+                    if(removeIntent){
+                        ui.item.remove();
+                    }
+                }
+        });
+         
+        $("li[id^='word']").draggable({
+            helper: "clone",
+            connectToSortable: ".items"
+        });
+    });
+
+    $(document).ready(initializeSock());
+
+    // Initializes the websockets for communication with python server
+    function initializeSock(){
+      sock = new WebSocket("ws://localhost:8000/sock");
+      sock.onopen = function(){ console.log("Connected websocket"); };
+      sock.onerror = function(){ console.log("Websocket error"); };
+    }
+
+    function logResponse(){
+        var submit_data = {};
+        var d = new Date();
+        submit_data['time'] = 3600*d.getHours() + 60*d.getMinutes() + d.getSeconds() - time;
+        submit_data['video'] = $("#video").attr("name");
+
+        var response = $("#response_list").sortable('toArray', {attribute: 'text'});
+        submit_data['response'] = "";
+        for(var k = 0; k < response.length; k++){
+            submit_data['response'] += response[k];
+            if(k != response.length-1){
+                submit_data['response'] += " ";
+            }
+        }
+
+        sock.send(JSON.stringify(submit_data));
+    }
+
+</script>
+ 
+<!-- HTML -->
+<iframe id="video" name="video_1" src="https://www.youtube.com/watch?v=l6orOrVQ36Q"></iframe>
+<div class="label">Response</div>
+<div id="response" class="container">
+    <ul id="response_list" class="items"></ul>
+</div>
+<div class="label">Wordbank</div>
+<div id="wordbank" class="container">
+    <ul id="wordbank_list" class="items">
+        <li id="word_1" text="this">this</li>
+        <li id="word_2" text="is">is</li>
+        <li id="word_3" text="a">a</li>
+        <li id="word_4" text="fantastic">fantastic</li>
+        <li id="word_5" text="video">video</li>
+    </ul>
+</div>
+<div id="button">
+    <button onclick="logResponse()">Submit Response</button>
+</div>
